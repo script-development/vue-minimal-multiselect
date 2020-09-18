@@ -12,8 +12,8 @@
     ],
     "scripts": {
         "test": "nyc mocha --recursive --require @babel/register",
-        "build": "eslint ./src && rollup src/index.js --file dist/index.js --format iife",
-        "dev": "rollup -c scripts/config.js",
+        "build": "rollup -c scripts/config.js",
+        "dev": "vue-cli-service serve --open",
         "watch": "rollup -c scripts/config.js --watch",
         "pub": "npm version patch && npm publish",
         "docs": "typedoc",
@@ -23,6 +23,11 @@
     "author": "Script",
     "license": "MIT",
     "devDependencies": {
+        "@vue/cli-plugin-babel": "~4.5.0",
+        "@vue/cli-plugin-eslint": "~4.5.0",
+        "@vue/cli-service": "~4.5.0",
+        "core-js": "^3.6.5",
+        "vue-template-compiler": "^2.6.11",
         "@babel/core": "^7.11.4",
         "@babel/preset-env": "^7.11.5",
         "@babel/register": "^7.11.5",
@@ -41,7 +46,7 @@
         "rollup": "^2.26.11",
         "typedoc": "^0.19.1",
         "typescript": "^4.0.2",
-        "vue": "2.6.12"
+        "vue": "^2.6.12"
     },
     "publishConfig": {
         "registry": "https://npm.pkg.github.com/"
