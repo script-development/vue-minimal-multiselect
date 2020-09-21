@@ -30,7 +30,11 @@ export default {
         noResults: {
             type: String,
             required: false,
-            default: () => 'Option not found, press enter to add',
+            default: 'Option not found, press enter to add',
+        },
+        optionsLimit: {
+            type: Number,
+            default: 1000,
         },
     },
     data() {
@@ -43,23 +47,70 @@ export default {
         filteredOptions() {
             const selectedAmount = this.value.length;
 
-            if (!this.findOption && !selectedAmount) return this.options;
+            console.log('filtering');
+            if (!this.findOption && !selectedAmount) return this.options.slice(0, this.optionsLimit);
 
             const search = this.findOption.toLowerCase();
 
-            return this.options.filter(option => {
-                if (search && !option[this.textField].toLowerCase().includes(search)) return false;
-                if (selectedAmount && this.value.indexOf(option[this.valueField]) !== -1) return false;
-                return true;
-            });
+            // TODO :: why does this not work fast when selecting?
+            // const options = new Array(this.optionsLimit);
+            console.time('for');
+            // const options = Array(this.optionsLimit);
+            const options = [];
+            const optionLength = this.options.length;
+            console.log(optionLength);
+
+            // let fillIndex = 0;
+            for (let index = 0; index < optionLength; index++) {
+                // console.log(index);
+                // if (index > this.optionsLimit) break;
+                if (options.length > this.optionsLimit) break;
+                const option = this.options[index];
+                // if (search && option[this.textField].toLowerCase().indexOf(search) === -1) continue;
+                // if (selectedAmount && this.value.indexOf(option[this.valueField]) !== -1) continue;
+                options.push(option);
+                // options[fillIndex] = option[this.textField];
+                // fillIndex++;
+            }
+            console.timeEnd('for');
+
+            // return options;
+            console.time('filter');
+            const Ooptions = this.options
+                .filter(option => {
+                    if (search && option[this.textField].toLowerCase().indexOf(search) === -1) return false;
+                    if (selectedAmount && this.value.indexOf(option[this.valueField]) !== -1) return false;
+                    return true;
+                })
+                .slice(0, this.optionsLimit);
+            console.timeEnd('filter');
+
+            console.log(Ooptions);
+            // return Ooptions;
+
+            console.time('reduce');
+            const Roptions = this.options.reduce((acc, option) => {
+                if (acc.length > this.optionsLimit) return acc;
+                if (search && option[this.textField].toLowerCase().indexOf(search) === -1) return acc;
+                if (selectedAmount && this.value.indexOf(option[this.valueField]) !== -1) return acc;
+                acc.push(option);
+                return acc;
+            }, []);
+            console.timeEnd('reduce');
+
+            return Roptions;
         },
     },
     methods: {
+        // pickOption(optionText) {
+        //     const selectedOption = this.options.find(option => option[this.textField] === optionText);
+        //     this.$emit('input', [...this.value, selectedOption[this.valueField]]);
         pickOption(option) {
             this.$emit('input', [...this.value, option[this.valueField]]);
             this.clearDropdown();
         },
         addOption() {
+            // If the option is already added, don't add it again
             if (this.value.findIndex(option => option[this.textField] === this.findOption) !== -1) return;
 
             if (this.$listeners.create) return this.$emit('create', this.findOption);
@@ -158,7 +209,7 @@ export default {
                 on: {
                     click: () => (this.dropDownEnabled = true),
                     focusout: () => {
-                        // TODO :: it's not really pretty, but it works
+                        // TODO :: this does not work, should focus or blur somewhere else
                         setTimeout(this.clearDropdown, 200);
                     },
                 },
@@ -171,8 +222,8 @@ export default {
                 'li',
                 {
                     class: 'multiselect__element',
-                    key: option[this.textField],
-                    attrs: {style: 'cursor: pointer;'},
+                    key: option[this.valueField],
+                    // attrs: {style: 'cursor: pointer;'},
                     on: {click: () => this.pickOption(option)},
                 },
                 [h('span', {class: 'multiselect__option'}, [option[this.textField]])]
@@ -198,7 +249,6 @@ export default {
             {
                 class: 'multiselect__content-wrapper',
                 attrs: {
-                    tabindex: '-1',
                     style: this.dropDownEnabled ? 'max-height: 300px;' : 'max-height: 300px; display:none;',
                 },
             },
