@@ -47,64 +47,20 @@ var index = {
         filteredOptions() {
             const selectedAmount = this.value.length;
 
-            console.log('filtering');
             if (!this.findOption && !selectedAmount) return this.options.slice(0, this.optionsLimit);
 
             const search = this.findOption.toLowerCase();
 
-            // TODO :: why does this not work fast when selecting?
-            // const options = new Array(this.optionsLimit);
-            console.time('for');
-            // const options = Array(this.optionsLimit);
-            const options = [];
-            const optionLength = this.options.length;
-            console.log(optionLength);
-
-            // let fillIndex = 0;
-            for (let index = 0; index < optionLength; index++) {
-                // console.log(index);
-                // if (index > this.optionsLimit) break;
-                if (options.length > this.optionsLimit) break;
-                const option = this.options[index];
-                // if (search && option[this.textField].toLowerCase().indexOf(search) === -1) continue;
-                // if (selectedAmount && this.value.indexOf(option[this.valueField]) !== -1) continue;
-                options.push(option);
-                // options[fillIndex] = option[this.textField];
-                // fillIndex++;
-            }
-            console.timeEnd('for');
-
-            // return options;
-            console.time('filter');
-            const Ooptions = this.options
-                .filter(option => {
-                    if (search && option[this.textField].toLowerCase().indexOf(search) === -1) return false;
-                    if (selectedAmount && this.value.indexOf(option[this.valueField]) !== -1) return false;
-                    return true;
-                })
-                .slice(0, this.optionsLimit);
-            console.timeEnd('filter');
-
-            console.log(Ooptions);
-            // return Ooptions;
-
-            console.time('reduce');
-            const Roptions = this.options.reduce((acc, option) => {
+            return this.options.reduce((acc, option) => {
                 if (acc.length > this.optionsLimit) return acc;
                 if (search && option[this.textField].toLowerCase().indexOf(search) === -1) return acc;
                 if (selectedAmount && this.value.indexOf(option[this.valueField]) !== -1) return acc;
                 acc.push(option);
                 return acc;
             }, []);
-            console.timeEnd('reduce');
-
-            return Roptions;
         },
     },
     methods: {
-        // pickOption(optionText) {
-        //     const selectedOption = this.options.find(option => option[this.textField] === optionText);
-        //     this.$emit('input', [...this.value, selectedOption[this.valueField]]);
         pickOption(option) {
             this.$emit('input', [...this.value, option[this.valueField]]);
             this.clearDropdown();
@@ -223,7 +179,6 @@ var index = {
                 {
                     class: 'multiselect__element',
                     key: option[this.valueField],
-                    // attrs: {style: 'cursor: pointer;'},
                     on: {click: () => this.pickOption(option)},
                 },
                 [h('span', {class: 'multiselect__option'}, [option[this.textField]])]
@@ -255,17 +210,13 @@ var index = {
             [options]
         );
 
-        const children = [select, tags, optionsWrapper];
-
-        const minimalMultiselect = h(
+        return h(
             'div',
             {
                 class: this.dropDownEnabled ? 'multiselect multiselect--active' : 'multiselect',
             },
-            children
+            [select, tags, optionsWrapper]
         );
-
-        return minimalMultiselect;
     },
 };
 
