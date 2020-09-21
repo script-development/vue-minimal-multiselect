@@ -2,6 +2,8 @@ import Vue from 'vue';
 import MinimalMultiselect from '../dist/index.esm';
 import Multiselect from 'vue-multiselect';
 
+import '../dist/style.css';
+
 const dec2hex = dec => (dec < 10 ? '0' + String(dec) : dec.toString(16));
 const generateRandomString = len => Array.from(crypto.getRandomValues(new Uint8Array(len)), dec2hex).join('');
 
