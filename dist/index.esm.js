@@ -52,7 +52,7 @@ var index = {
             const search = this.findOption.toLowerCase();
 
             return this.options.reduce((acc, option) => {
-                if (acc.length > this.optionsLimit) return acc;
+                if (acc.length >= this.optionsLimit) return acc;
                 if (search && option[this.textField].toLowerCase().indexOf(search) === -1) return acc;
                 if (selectedAmount && this.value.indexOf(option[this.valueField]) !== -1) return acc;
                 acc.push(option);
@@ -69,9 +69,11 @@ var index = {
             // If the option is already added, don't add it again
             if (this.value.findIndex(option => option[this.textField] === this.findOption) !== -1) return;
 
-            if (this.$listeners.create) return this.$emit('create', this.findOption);
-
-            this.$emit('input', [...this.value, {[this.textField]: this.findOption}]);
+            if (this.$listeners.create) {
+                this.$emit('create', this.findOption);
+            } else {
+                this.$emit('input', [...this.value, {[this.textField]: this.findOption}]);
+            }
             this.clearDropdown();
         },
         removeOption(optionValue) {
@@ -134,8 +136,8 @@ var index = {
             on: {
                 input: event => (this.findOption = event.target.value),
                 keypress: event => {
-                    if (event.charCode == 13) {
-                        // charCode 13 is enter key
+                    if (event.keyCode == 13) {
+                        // keyCode 13 is enter key
                         event.preventDefault();
                         this.inputEnter();
                     }
@@ -146,6 +148,7 @@ var index = {
         if (this.dropDownEnabled) {
             this.$nextTick(() => {
                 // TODO :: find a way to make this work gracefully
+                // TODO :: make it reach the else for tests, for now
                 if (!this.findOption) searchField.elm.value = '';
                 // TODO :: find a way to focus only on opening
                 searchField.elm.focus();
