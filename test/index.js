@@ -11,6 +11,17 @@ const getAmountOfOptions = amount =>
     [...Array(amount).keys()].map(index => ({id: index + 1, name: generateRandomString(10)}));
 
 describe('Vue minimal select', () => {
+    it('should have the name minimal-multiselect', () => {
+        const wrapper = shallowMount(Multiselect, {
+            propsData: {
+                value: [0],
+                options: getAmountOfOptions(3),
+            },
+        });
+
+        assert.strictEqual(wrapper.name(), 'minimal-multiselect');
+    });
+
     describe('computed properties', () => {
         describe('filtered options', () => {
             it('should filter out selected options', () => {
@@ -76,7 +87,7 @@ describe('Vue minimal select', () => {
                 ]);
             });
 
-            it('should return not more than optionsLimit', () => {
+            it('should return not more than custom optionsLimit', () => {
                 const wrapper = shallowMount(Multiselect, {
                     propsData: {
                         value: [],
@@ -86,6 +97,18 @@ describe('Vue minimal select', () => {
                 });
 
                 assert.strictEqual(wrapper.vm.filteredOptions.length, 2);
+            });
+
+            it('should return not more than default optionsLimit', () => {
+                // This test takes a long time, cause it needs to create a lot of options
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [],
+                        options: getAmountOfOptions(2000),
+                    },
+                });
+
+                assert.strictEqual(wrapper.vm.filteredOptions.length, 1000);
             });
 
             it('should return not more than optionsLimit when searching', () => {
@@ -173,6 +196,22 @@ describe('Vue minimal select', () => {
                 wrapper.vm.addOption();
 
                 assert.strictEqual(Object.keys(wrapper.emitted()).length, 0);
+            });
+
+            it('should emit a create event when there is a create listeners and already a value', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [{name: 'Klaas'}],
+                        options: getAmountOfOptions(3),
+                    },
+                    listeners: {create: () => {}},
+                });
+
+                wrapper.setData({findOption: 'Harry'});
+
+                wrapper.vm.addOption();
+
+                assert.strictEqual(wrapper.emitted().create[0][0], 'Harry');
             });
 
             it('should emit a create event when there is a create listeners', () => {
@@ -448,12 +487,36 @@ describe('Vue minimal select', () => {
 
                 const callback = sinon.spy(wrapper.vm, 'removeOption');
 
-                const closeIcon = wrapper.find('i.multiselect__tag-icon');
-
-                closeIcon.trigger('mousedown');
+                wrapper.find('i.multiselect__tag-icon').trigger('mousedown');
 
                 assert(callback.calledWith(1));
                 assert.strictEqual(callback.callCount, 1);
+            });
+
+            it('should show the correct text field when a created option is a tag', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [{name: 'Harry'}],
+                        options: getAmountOfOptions(5),
+                    },
+                });
+
+                assert.strictEqual(wrapper.find('span.multiselect__tag span').text(), 'Harry');
+            });
+
+            it('should show the correct text field for an option', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [2],
+                        options: [
+                            {id: 1, name: 'Harry'},
+                            {id: 2, name: 'Sjaak'},
+                            {id: 3, name: 'Kees'},
+                        ],
+                    },
+                });
+
+                assert.strictEqual(wrapper.find('span.multiselect__tag span').text(), 'Sjaak');
             });
         });
 
@@ -623,6 +686,31 @@ describe('Vue minimal select', () => {
                 });
 
                 assert.strictEqual(wrapper.find('span.multiselect__option').text(), 'no results boy');
+            });
+
+            it('should show the default no results message when there are no results', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [],
+                        options: [
+                            {id: 1, name: 'Harry'},
+                            {id: 2, name: 'Sjaak'},
+                            {id: 3, name: 'Kees'},
+                        ],
+                    },
+                    data() {
+                        // wrapper.setData does not work here somehow, cause it does not update the view on time
+                        return {
+                            dropDownEnabled: true,
+                            findOption: 'asd',
+                        };
+                    },
+                });
+
+                assert.strictEqual(
+                    wrapper.find('span.multiselect__option').text(),
+                    'Option not found, press enter to add'
+                );
             });
 
             it('should call add option when clicked on the no results message', () => {

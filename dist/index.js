@@ -7,6 +7,8 @@
 var index = {
     name: 'minimal-multiselect',
     props: {
+        // Stryker will replace a lot here, see:
+        // https://github.com/stryker-mutator/stryker/issues/1472
         valueField: {
             type: String,
             required: false,
@@ -36,6 +38,7 @@ var index = {
         },
         optionsLimit: {
             type: Number,
+            required: false,
             default: 1000,
         },
     },
@@ -49,6 +52,9 @@ var index = {
         filteredOptions() {
             const selectedAmount = this.value.length;
 
+            // Stryker surviver, if first part is false it survives.
+            // cause the function will return always the same
+            // could kill it by deleting this line, need to test this for speed
             if (!this.findOption && !selectedAmount) return this.options.slice(0, this.optionsLimit);
 
             const search = this.findOption.toLowerCase();
