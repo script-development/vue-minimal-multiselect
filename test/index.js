@@ -3,7 +3,6 @@ import assert from 'assert';
 import {shallowMount} from '@vue/test-utils';
 import Multiselect from '../src';
 import crypto from 'crypto';
-// import sinon from '../node_modules/sinon/pkg/sinon-esm.js';
 import sinon from 'sinon';
 
 const generateRandomString = len => crypto.randomBytes(len).toString('hex');
@@ -198,7 +197,6 @@ describe('Vue minimal select', () => {
                         value: [],
                         options: getAmountOfOptions(3),
                     },
-                    listeners: {create: undefined},
                 });
 
                 wrapper.setData({findOption: 'Harry'});
@@ -370,7 +368,7 @@ describe('Vue minimal select', () => {
                 assert.strictEqual(wrapper.vm.dropDownEnabled, false);
             });
 
-            it('should clear search when closing', () => {
+            it('should call closeDropdown when closing', () => {
                 const wrapper = shallowMount(Multiselect, {
                     propsData: {
                         value: [],
@@ -378,11 +376,14 @@ describe('Vue minimal select', () => {
                     },
                 });
 
-                wrapper.setData({dropDownEnabled: true, findOption: generateRandomString(2)});
+                const callback = sinon.spy(wrapper.vm, 'clearDropdown');
+
+                wrapper.setData({dropDownEnabled: true});
 
                 const selectButton = wrapper.find('div.multiselect__select');
                 selectButton.trigger('click');
-                assert.strictEqual(wrapper.vm.findOption, '');
+
+                assert.strictEqual(callback.callCount, 1);
             });
         });
 
@@ -405,11 +406,7 @@ describe('Vue minimal select', () => {
                 const wrapper = shallowMount(Multiselect, {
                     propsData: {
                         value: [],
-                        options: [
-                            {id: 1, name: 'Harry'},
-                            {id: 2, name: 'Sjaak'},
-                            {id: 3, name: 'Kees'},
-                        ],
+                        options: getAmountOfOptions(5),
                     },
                 });
                 const callback = sinon.spy(wrapper.vm, 'inputEnter');
@@ -419,6 +416,263 @@ describe('Vue minimal select', () => {
 
                 searchInput.trigger('keypress', {keyCode: 13});
 
+                assert.strictEqual(callback.callCount, 1);
+            });
+
+            it('should not call inputEnter on any other key', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [],
+                        options: getAmountOfOptions(5),
+                    },
+                });
+                const callback = sinon.spy(wrapper.vm, 'inputEnter');
+
+                const searchInput = wrapper.find('input.multiselect__input');
+                searchInput.setValue('Klaas');
+
+                searchInput.trigger('keypress', {keyCode: 16});
+
+                assert.strictEqual(callback.callCount, 0);
+            });
+        });
+
+        describe('tags', () => {
+            it('should call remove option when clicking on the X with the optionValue that belongs to the tag', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [1],
+                        options: getAmountOfOptions(5),
+                    },
+                });
+
+                const callback = sinon.spy(wrapper.vm, 'removeOption');
+
+                const closeIcon = wrapper.find('i.multiselect__tag-icon');
+
+                closeIcon.trigger('mousedown');
+
+                assert(callback.calledWith(1));
+                assert.strictEqual(callback.callCount, 1);
+            });
+        });
+
+        describe('placeholder', () => {
+            it('should show the placeholder when dropdown is not enabled and there are no selected values', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [],
+                        options: getAmountOfOptions(5),
+                    },
+                });
+
+                assert(wrapper.find('span.multiselect__placeholder').exists());
+            });
+
+            it('should not show the placeholder when dropdown is enabled and there are no selected values', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [],
+                        options: getAmountOfOptions(5),
+                    },
+                    data() {
+                        // wrapper.setData does not work here somehow, cause it does not update the view on time
+                        return {
+                            dropDownEnabled: true,
+                            findOption: '',
+                        };
+                    },
+                });
+
+                assert.strictEqual(wrapper.find('span.multiselect__placeholder').exists(), false);
+            });
+
+            it('should not show the placeholder when there is a selected value', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [1],
+                        options: getAmountOfOptions(5),
+                    },
+                });
+
+                assert.strictEqual(wrapper.find('span.multiselect__placeholder').exists(), false);
+            });
+
+            it('should show the custom placeholder string', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [],
+                        options: getAmountOfOptions(5),
+                        placeholder: 'This is a test placeholder',
+                    },
+                });
+
+                assert.strictEqual(wrapper.find('span.multiselect__placeholder').text(), 'This is a test placeholder');
+            });
+        });
+
+        describe('primary', () => {
+            it('should enable dropdown when clicked on', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [],
+                        options: getAmountOfOptions(5),
+                    },
+                });
+
+                wrapper.find('div.multiselect__tags').trigger('click');
+
+                assert.strictEqual(wrapper.vm.dropDownEnabled, true);
+            });
+
+            it('should call clear dropdown after 200 ms when focussing out', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [],
+                        options: getAmountOfOptions(5),
+                    },
+                });
+
+                const callback = sinon.spy(wrapper.vm, 'clearDropdown');
+                const clock = sinon.useFakeTimers({toFake: ['setTimeout']});
+
+                wrapper.find('div.multiselect__tags').trigger('focusout');
+
+                clock.tick(100);
+
+                assert.strictEqual(callback.callCount, 0);
+
+                clock.tick(100);
+
+                assert.strictEqual(callback.callCount, 1);
+
+                // needed to make test:watch work
+                clock.runAll();
+                clock.restore();
+            });
+        });
+
+        describe('options', () => {
+            it('should call pick option when clicked on', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [],
+                        options: [
+                            {id: 1, name: 'Harry'},
+                            {id: 2, name: 'Sjaak'},
+                            {id: 3, name: 'Kees'},
+                        ],
+                    },
+                    data() {
+                        // wrapper.setData does not work here somehow, cause it does not update the view on time
+                        return {
+                            dropDownEnabled: true,
+                            findOption: '',
+                        };
+                    },
+                });
+
+                const callback = sinon.spy(wrapper.vm, 'pickOption');
+
+                wrapper.find('li.multiselect__element').trigger('click');
+
+                assert(callback.calledWith({id: 1, name: 'Harry'}));
+                assert.strictEqual(callback.callCount, 1);
+            });
+
+            it('should show the no results option when there are no results', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [],
+                        options: [
+                            {id: 1, name: 'Harry'},
+                            {id: 2, name: 'Sjaak'},
+                            {id: 3, name: 'Kees'},
+                        ],
+                    },
+                    data() {
+                        // wrapper.setData does not work here somehow, cause it does not update the view on time
+                        return {
+                            dropDownEnabled: true,
+                            findOption: 'asd',
+                        };
+                    },
+                });
+
+                assert.strictEqual(wrapper.find('span.multiselect__option').isVisible(), true);
+            });
+
+            it('should show the custom no results message when there are no results', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [],
+                        options: [
+                            {id: 1, name: 'Harry'},
+                            {id: 2, name: 'Sjaak'},
+                            {id: 3, name: 'Kees'},
+                        ],
+                        noResults: 'no results boy',
+                    },
+                    data() {
+                        // wrapper.setData does not work here somehow, cause it does not update the view on time
+                        return {
+                            dropDownEnabled: true,
+                            findOption: 'asd',
+                        };
+                    },
+                });
+
+                assert.strictEqual(wrapper.find('span.multiselect__option').text(), 'no results boy');
+            });
+
+            it('should call add option when clicked on the no results message', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [],
+                        options: [
+                            {id: 1, name: 'Harry'},
+                            {id: 2, name: 'Sjaak'},
+                            {id: 3, name: 'Kees'},
+                        ],
+                    },
+                    data() {
+                        // wrapper.setData does not work here somehow, cause it does not update the view on time
+                        return {
+                            dropDownEnabled: true,
+                            findOption: 'asd',
+                        };
+                    },
+                });
+
+                const callback = sinon.spy(wrapper.vm, 'addOption');
+                wrapper.find('span.multiselect__option').trigger('click');
+
+                assert.strictEqual(callback.callCount, 1);
+            });
+
+            it('should call pick option when clicked on an option', () => {
+                const wrapper = shallowMount(Multiselect, {
+                    propsData: {
+                        value: [],
+                        options: [
+                            {id: 1, name: 'Harry'},
+                            {id: 2, name: 'Sjaak'},
+                            {id: 3, name: 'Kees'},
+                        ],
+                    },
+                    data() {
+                        // wrapper.setData does not work here somehow, cause it does not update the view on time
+                        return {
+                            dropDownEnabled: true,
+                            findOption: '',
+                        };
+                    },
+                });
+
+                const callback = sinon.spy(wrapper.vm, 'pickOption');
+                wrapper.find('span.multiselect__option').trigger('click');
+
+                assert(callback.calledWith({id: 1, name: 'Harry'}));
                 assert.strictEqual(callback.callCount, 1);
             });
         });

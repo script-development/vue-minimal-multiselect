@@ -148,7 +148,6 @@ var index = {
         if (this.dropDownEnabled) {
             this.$nextTick(() => {
                 // TODO :: find a way to make this work gracefully
-                // TODO :: make it reach the else for tests, for now
                 if (!this.findOption) searchField.elm.value = '';
                 // TODO :: find a way to focus only on opening
                 searchField.elm.focus();
@@ -161,7 +160,7 @@ var index = {
             tagChildren.push(h('span', {class: 'multiselect__placeholder'}, [this.placeholder]));
         }
 
-        const tags = h(
+        const primary = h(
             'div',
             {
                 class: 'multiselect__tags',
@@ -218,7 +217,7 @@ var index = {
             {
                 class: this.dropDownEnabled ? 'multiselect multiselect--active' : 'multiselect',
             },
-            [select, tags, optionsWrapper]
+            [select, primary, optionsWrapper]
         );
     },
 };
